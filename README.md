@@ -19,7 +19,7 @@ build\app\outputs\flutter-apk\app-release.apk
 
 ## تنزيل التطبيق
 
-[تحميل APK لنظام Android](https://github.com/ivanshero400/broadcast-bubble-android/releases/download/v1.0.0/bubble-broadcast.apk)
+[تحميل أحدث APK لنظام Android](https://github.com/ivanshero400/broadcast-bubble-android/releases/latest/download/bubble-broadcast.apk)
 
 ## تشغيل الفقاعة
 

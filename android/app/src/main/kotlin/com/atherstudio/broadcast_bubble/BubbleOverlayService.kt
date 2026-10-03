@@ -156,8 +156,19 @@ class BubbleOverlayService : Service() {
         root.layoutDirection = View.LAYOUT_DIRECTION_RTL
         root.addView(if (expanded) createPanel() else createBubble())
 
-        val width = dp(if (expanded) 286 else 58)
-        val height = dp(if (expanded) 350 else 58)
+        val display = resources.displayMetrics
+        val maxWidth = (display.widthPixels - dp(24)).coerceAtLeast(dp(1))
+        val maxHeight = (display.heightPixels - dp(32)).coerceAtLeast(dp(1))
+        val width = if (expanded) {
+            minOf(dp(620), (display.widthPixels * 0.92f).toInt(), maxWidth)
+        } else {
+            dp(58)
+        }
+        val height = if (expanded) {
+            minOf(dp(720), (display.heightPixels * 0.74f).toInt(), maxHeight)
+        } else {
+            dp(58)
+        }
         val params = windowParams ?: WindowManager.LayoutParams(
             width,
             height,
@@ -171,6 +182,8 @@ class BubbleOverlayService : Service() {
         }.also { windowParams = it }
         params.width = width
         params.height = height
+        params.x = params.x.coerceIn(0, (display.widthPixels - width).coerceAtLeast(0))
+        params.y = params.y.coerceIn(0, (display.heightPixels - height).coerceAtLeast(0))
         try {
             if (root.isAttachedToWindow) {
                 windowManager.updateViewLayout(root, params)
@@ -226,8 +239,8 @@ class BubbleOverlayService : Service() {
         val card = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutDirection = View.LAYOUT_DIRECTION_RTL
-            setPadding(dp(12), dp(11), dp(12), dp(12))
-            background = roundedDrawable(Color.WHITE, dp(20), Color.rgb(224, 231, 243), dp(1))
+            setPadding(dp(16), dp(15), dp(16), dp(16))
+            background = roundedDrawable(Color.WHITE, dp(23), Color.rgb(224, 231, 243), dp(1))
             elevation = dp(10).toFloat()
         }
 
@@ -244,25 +257,25 @@ class BubbleOverlayService : Service() {
             gravity = Gravity.CENTER
             background = roundedDrawable(Color.rgb(60, 94, 207), dp(11), Color.rgb(60, 94, 207), 0)
         }
-        header.addView(emblem, LinearLayout.LayoutParams(dp(34), dp(34)))
+        header.addView(emblem, LinearLayout.LayoutParams(dp(38), dp(38)))
         val headerTitle = TextView(this).apply {
             text = "فقاعة البث"
             setTextColor(Color.rgb(31, 48, 75))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
             typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER_VERTICAL or Gravity.RIGHT
             setPadding(dp(9), 0, dp(4), 0)
             layoutDirection = View.LAYOUT_DIRECTION_RTL
             contentDescription = "اسحب لتحريك اللوحة"
         }
-        header.addView(headerTitle, LinearLayout.LayoutParams(0, dp(38), 1f))
+        header.addView(headerTitle, LinearLayout.LayoutParams(0, dp(44), 1f))
         attachDragHandler(headerTitle) {}
         header.addView(
             panelIconButton("−", "تصغير اللوحة") {
                 expanded = false
                 renderOverlay()
             },
-            LinearLayout.LayoutParams(dp(35), dp(35)),
+            LinearLayout.LayoutParams(dp(40), dp(40)),
         )
         header.addView(View(this), LinearLayout.LayoutParams(dp(4), 1))
         header.addView(
@@ -270,24 +283,24 @@ class BubbleOverlayService : Service() {
                 preferences.edit().putBoolean(KEY_BUBBLE_ACTIVE, false).apply()
                 stopSelf()
             },
-            LinearLayout.LayoutParams(dp(35), dp(35)),
+            LinearLayout.LayoutParams(dp(40), dp(40)),
         )
-        card.addView(header, LinearLayout.LayoutParams(-1, dp(38)))
+        card.addView(header, LinearLayout.LayoutParams(-1, dp(44)))
 
         val selected = currentIdea()
         val title = TextView(this).apply {
             text = selected?.optString("title").orEmpty().ifBlank { "فكرة بلا عنوان" }
             setTextColor(Color.rgb(28, 43, 67))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 19f)
             typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER_VERTICAL or Gravity.RIGHT
             maxLines = 2
             ellipsize = android.text.TextUtils.TruncateAt.END
             textDirection = View.TEXT_DIRECTION_RTL
             layoutDirection = View.LAYOUT_DIRECTION_RTL
-            setPadding(dp(2), dp(7), dp(2), dp(4))
+            setPadding(dp(3), dp(10), dp(3), dp(7))
         }
-        card.addView(title, LinearLayout.LayoutParams(-1, dp(48)))
+        card.addView(title, LinearLayout.LayoutParams(-1, dp(58)))
 
         val body = TextView(this).apply {
             text = selected?.optString("body").orEmpty().ifBlank {
@@ -295,12 +308,12 @@ class BubbleOverlayService : Service() {
                 else "لا يوجد نص لهذه الفكرة بعد."
             }
             setTextColor(Color.rgb(47, 61, 83))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, (fontSize - 5).coerceIn(17, 24).toFloat())
-            setLineSpacing(dp(3).toFloat(), 1.1f)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, fontSize.coerceIn(20, 48).toFloat())
+            setLineSpacing(dp(5).toFloat(), 1.12f)
             gravity = Gravity.TOP or Gravity.RIGHT
             textDirection = View.TEXT_DIRECTION_RTL
             layoutDirection = View.LAYOUT_DIRECTION_RTL
-            setPadding(dp(11), dp(10), dp(11), dp(12))
+            setPadding(dp(16), dp(15), dp(16), dp(17))
         }
         val scroll = ScrollView(this).apply {
             isFillViewport = true
@@ -309,13 +322,13 @@ class BubbleOverlayService : Service() {
             background = roundedDrawable(Color.rgb(247, 249, 253), dp(13), Color.rgb(236, 240, 247), dp(1))
             addView(body, FrameLayout.LayoutParams(-1, -2))
         }
-        card.addView(scroll, LinearLayout.LayoutParams(-1, dp(154)))
+        card.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
 
         if (ideas.length() == 0) {
             val openApp = panelTextButton("افتح التطبيق", Color.rgb(235, 240, 253), Color.rgb(52, 82, 180)) {
                 openMainActivity()
             }
-            card.addView(openApp, LinearLayout.LayoutParams(-1, dp(39)).apply { topMargin = dp(8) })
+            card.addView(openApp, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(10) })
         } else {
             val controls = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
@@ -324,19 +337,19 @@ class BubbleOverlayService : Service() {
             }
             controls.addView(
                 panelTextButton("السابق", Color.rgb(238, 242, 251), Color.rgb(52, 70, 105)) { stepIdea(-1) },
-                LinearLayout.LayoutParams(0, dp(41), 1f),
+                LinearLayout.LayoutParams(0, dp(48), 1f),
             )
             controls.addView(View(this), LinearLayout.LayoutParams(dp(7), 1))
             controls.addView(
                 panelTextButton("أ+", Color.rgb(238, 242, 251), Color.rgb(52, 82, 180)) { increaseFont() },
-                LinearLayout.LayoutParams(dp(48), dp(41)),
+                LinearLayout.LayoutParams(dp(58), dp(48)),
             )
             controls.addView(View(this), LinearLayout.LayoutParams(dp(7), 1))
             controls.addView(
                 panelTextButton("التالية", Color.rgb(238, 242, 251), Color.rgb(52, 70, 105)) { stepIdea(1) },
-                LinearLayout.LayoutParams(0, dp(41), 1f),
+                LinearLayout.LayoutParams(0, dp(48), 1f),
             )
-            card.addView(controls, LinearLayout.LayoutParams(-1, dp(41)).apply { topMargin = dp(9) })
+            card.addView(controls, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(10) })
         }
         return card
     }
@@ -357,7 +370,7 @@ class BubbleOverlayService : Service() {
         TextView(this).apply {
             text = label
             setTextColor(textColor)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, if (label == "أ+") 18f else 14f)
             typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
             background = roundedDrawable(backgroundColor, dp(12), backgroundColor, 0)
@@ -389,8 +402,9 @@ class BubbleOverlayService : Service() {
                     val dy = (event.rawY - downRawY).toInt()
                     if (abs(dx) > dp(5) || abs(dy) > dp(5)) moved = true
                     if (moved) {
-                        params.x = (startX - dx).coerceAtLeast(0)
-                        params.y = (startY + dy).coerceAtLeast(0)
+                        val display = resources.displayMetrics
+                        params.x = (startX - dx).coerceIn(0, (display.widthPixels - params.width).coerceAtLeast(0))
+                        params.y = (startY + dy).coerceIn(0, (display.heightPixels - params.height).coerceAtLeast(0))
                         overlayRoot?.let { windowManager.updateViewLayout(it, params) }
                     }
                     true
